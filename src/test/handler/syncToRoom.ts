@@ -2,60 +2,43 @@ import * as vscode from 'vscode';
 import { SecureGlobalState } from './SecureGlobalState';
 import axios, { AxiosResponse } from "axios";
 
-// declaration
-type fileData = {
-	denthen_code: string,
-}
-
-let userInput: string | undefined;
 
 const client = axios.create({
-	baseURL: 'http://localhost:3000'
+	baseURL: 'http://localhost:3000/api/vscodes'
 });
 
 export async function syncToRoom(context: vscode.ExtensionContext) {
-
-
 	try {
-		
 		const editor =  vscode.window.activeTextEditor;
 		if (!editor) {
 			vscode.window.showWarningMessage('Sync failed: No active text editor open!');
 			return;
 		}
-
-		
+		let userInput: string | undefined;
 		userInput = await vscode.window.showInputBox({
-			prompt: 'Paste room key and press enter to connect!',
-			placeHolder: 'e.g admin_a6f454fe-33c1-47e1-bfad-271a714eaba5_adfec931-869b-4043-91e5-9dd12ef691cd',
+			prompt: 'Paste special key and press enter to connect!',
+			placeHolder: 'e.g participant_5b1902bf_denden',
 			ignoreFocusOut: true,
 		});
-
 		if (userInput === undefined) {
 			vscode.window.showWarningMessage('Operation cancelled.');
 			return; 
 		}
-
  		if (userInput) {
-            await SecureGlobalState.instance.setSecret('room_key', userInput);
-			
 			try {
-				const config = vscode.workspace.getConfiguration('meYouCodeTogether');
-				const userKey = config.get<string>('apiKey') || 'secret_key';
-				if (!userKey) {
-					vscode.window.showErrorMessage('Sync failed: No API Key found in settings.');
-					return;
-				}
-	
-				const payload: fileData = {
-					denthen_code: userInput,
+				const payload = {
+					specialKey: userInput,
 				};
-					
-				const response = await client.post(`/room/join`, payload);
-				await vscode.window.showInformationMessage(String(response.data.message));
-
-				// ADD HERE A FUNCTION WHERE IT SAVES THE JWT TOKEN TO SECUREGLOBALSTATE
-								
+				const response = await client.post(`/join`, payload);
+				if (response) {
+					// Now you are passing a genuine string!
+					await SecureGlobalState.instance.setSecret('accessToken', response.data.accessToken);
+					await SecureGlobalState.instance.setSecret('refreshToken', response.data.refreshToken);
+					await SecureGlobalState.instance.setSecret('user', response.data.user.username);
+					vscode.window.showInformationMessage(response.data.message);
+				} else {
+					console.error('Token could not be extracted from response object.');
+				}
 			} catch (error: any) {
 				if (error.code === 'ECONNREFUSED') {
 					vscode.window.showWarningMessage('Express server is offline!');
@@ -65,8 +48,6 @@ export async function syncToRoom(context: vscode.ExtensionContext) {
 				}
 			}
         }
-		
-
 	} catch (error: any) {
 		if (error.code === 'ECONNREFUSED') {
 			vscode.window.showWarningMessage('Invalid key, Please Check if copy or create new if needed!');
@@ -82,20 +63,19 @@ export async function syncToRoom(context: vscode.ExtensionContext) {
 export async function GetSecretKey(context: vscode.ExtensionContext) {
 	try {
 		// Check if editor is active and prevent extension crash
-		
 		const editor =  vscode.window.activeTextEditor;
 		if (!editor) {
 			vscode.window.showWarningMessage('Sync failed: No active text editor open!');
 			return;
 		}
 
-		  const token = await SecureGlobalState.instance.getSecret('room_key');
+		  const savedData = await SecureGlobalState.instance.getSecret('user');
     
-		if (!token) {
+		if (!savedData) {
 			throw new Error("User is not authenticated.");
 		}
 
-		vscode.window.showInformationMessage(token);
+		vscode.window.showInformationMessage(savedData);
 	} catch (error: any) {
 		if (error.code === 'ECONNREFUSED') {
 			vscode.window.showWarningMessage('Invalid key, Please Check if copy or create new if needed!');

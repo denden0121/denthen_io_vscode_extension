@@ -47,14 +47,14 @@
 		"keybindings": [
 			{
 				"command": "me-you-code-together.postFullDocument",
-				"key": "ctrl+alt+a",
-				"mac": "ctrl+alt+a",
+				"key": "ctrl+alt+d",
+				"mac": "ctrl+alt+d",
 				"when": "editorTextFocus"
 			},
 			{
 				"command": "me-you-code-together.postSelectedCode",
-				"key": "ctrl+meta+h",
-				"mac": "ctrl+meta+h",
+				"key": "ctrl+alt+s",
+				"mac": "ctrl+alt+s",
 				"when": "editorHasSelection"
 			},
 			{
