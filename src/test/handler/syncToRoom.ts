@@ -3,6 +3,7 @@ import { SecureGlobalState } from './SecureGlobalState';
 import axios, { AxiosResponse } from "axios";
 import { ApiService } from '../service/api.service';
 import { VsCodeHelper } from '../util/helper.util';
+import  io  from "socket.io-client";
 
 
 const client = axios.create({
@@ -13,7 +14,30 @@ export async function syncToRoom(context: vscode.ExtensionContext) {
 	try {
 		const activeEditor = VsCodeHelper.getActiveEditor();
 		if (!activeEditor) { return; }
-
+		// connect
+		let socket: any = null;
+		async function initializeSocketConnection() {
+			try {
+				const actualRoomCode = await SecureGlobalState.instance.getSecret('roomCode');
+				
+				if (!actualRoomCode) {
+					console.log("No room code found stored in settings yet.");
+					return;
+				}
+				if (socket?.connected) {return;} 
+				// Connect using the configurations
+				socket = io("http://localhost:3000", {
+					transports: ['websocket']
+				});
+				socket.on("connect", () => {
+					console.log(`Connected to server! Joining room: ${actualRoomCode}`);
+					socket.emit("room:join", actualRoomCode);
+					vscode.window.showInformationMessage(`Live text-stream synced to room ${actualRoomCode}!`);
+				});
+			} catch (error) {
+				console.error("Failed to initialize socket:", error);
+			}
+		}
 		let userInput: string | undefined;
 		userInput = await vscode.window.showInputBox({
 			prompt: 'Paste special key and press enter to connect!',
@@ -32,10 +56,13 @@ export async function syncToRoom(context: vscode.ExtensionContext) {
 				};
 				const response = await client.post(`/join`, payload);
 				if (response) {
+
 					// Now you are passing a genuine string!
 					await SecureGlobalState.instance.setSecret('accessToken', response.data.accessToken);
 					await SecureGlobalState.instance.setSecret('refreshToken', response.data.refreshToken);
 					await SecureGlobalState.instance.setSecret('user', response.data.user.user.username);
+					await SecureGlobalState.instance.setSecret('roomCode', userInput.split("_")[1]);
+					initializeSocketConnection();
 					vscode.window.showInformationMessage(response.data.message);
 				} else {
 					console.error('Token could not be extracted from response object.');
