@@ -42,6 +42,10 @@
 			{
 				"command": "me-you-code-together.checkSecretKey",
 				"title": "Check room key"
+			},
+			{
+				"command": "me-you-code-together.toggleLiveStream",
+				"title": "Toggle VSCode Live Stream"
 			}
 		],
 		"keybindings": [
@@ -65,6 +69,12 @@
 			},
 			{
 				"command": "me-you-code-together.testPopulateEditBuilder",
+				"key": "ctrl+meta+e",
+				"mac": "ctrl+meta+e",
+				"when": "editorIsOpen"
+			},
+			{
+				"command": "me-you-code-together.toggleLiveStream",
 				"key": "ctrl+meta+t",
 				"mac": "ctrl+meta+t",
 				"when": "editorIsOpen"
@@ -98,6 +108,7 @@
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^22.19.19",
+		"@types/socket.io-client": "^1.4.36",
 		"@types/vscode": "^1.120.0",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
@@ -108,6 +119,7 @@
 		"typescript-eslint": "^8.56.1"
 	},
 	"dependencies": {
-		"axios": "^1.16.1"
+		"axios": "^1.16.1",
+		"socket.io-client": "^4.8.3"
 	}
 }
